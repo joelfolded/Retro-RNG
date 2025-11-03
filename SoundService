@@ -1,0 +1,58 @@
+local SoundService = game:GetService("SoundService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local folder = workspace:WaitForChild("Playlist")
+local TextPrefix = "Currently playing: "
+
+-- Create Music Instance
+local music = SoundService:FindFirstChild("PersistentMusic")
+if not music then
+	music = Instance.new("Sound")
+	music.Name = "PersistentMusic"
+	music.Parent = SoundService
+	music.Volume = 0.2
+	music.Looped = false
+end
+
+local songs = folder:GetChildren()
+local index = 1
+local currentSong = songs[index]
+
+local function getLabel()
+	local gui = player:FindFirstChild("PlayerGui")
+	if not gui then return nil end
+
+	local screenGui = gui:FindFirstChild("Music")
+	if not screenGui then return nil end
+
+	local label = screenGui:FindFirstChild("TextLabel")
+	return label
+end
+
+local function updateText()
+	local label = getLabel()
+	if label then
+		label.Text = TextPrefix .. currentSong.Name
+	end
+end
+
+local function playSong()
+	music.SoundId = currentSong.SoundId
+	updateText()
+	music:Play()
+end
+
+music.Ended:Connect(function()
+	index += 1
+	if index > #songs then index = 1 end
+	currentSong = songs[index]
+	playSong()
+end)
+
+player.CharacterAdded:Connect(function()
+	task.wait(0.2)
+	updateText()
+end)
+
+-- Start
+playSong()
