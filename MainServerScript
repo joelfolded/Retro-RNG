@@ -1,0 +1,766 @@
+local players = game:GetService("Players")
+local replicatedStorage = game:GetService("ReplicatedStorage")
+local dataStoreService = game:GetService("DataStoreService")
+local tweenService = game:GetService("TweenService")
+local textChatService = game:GetService("TextChatService")
+
+local dataStore = dataStoreService:GetDataStore("PlayersAuraStats18") -- This is the SaveData DO NOT DELETE
+
+local items = require(replicatedStorage:WaitForChild("ShopFolder"):WaitForChild("Items"))
+local usages = require(replicatedStorage:WaitForChild("ShopFolder"):WaitForChild("Usages"))
+
+
+
+local rollManager = require(replicatedStorage:WaitForChild("RollManager"))
+local rolls = require(replicatedStorage:WaitForChild("AurasFolder"):WaitForChild("Auras"))
+------------------------------------------------------------------------------------------
+local inventoryLimit = 2500 -- the amount of auras a player can hold
+
+local itemLimit = 75 -- the amount of items the player can hold (Luck potions and crafting Stuff)
+
+local superRare = 100 -- announce in chat
+
+local supersuperRare = 1000 -- announce in chat
+
+local quickRollCriteria = 499 -- 500 rolls to get quickroll
+
+local quickRollCooldown = 0.1 -- the time it takes to quickroll
+
+local rollCooldown = 0.5 -- the cooldown after a roll
+
+local prefix = "/" -- text before command
+
+local Admins = {
+	1786833771, 3032261577
+}
+------------------------------------------------------------------------------------------
+local values = {{Name = "HipHeight", Value = 0, ValueType = "NumberValue"}, {Name = "GauntletEquipped", Value = false, ValueType = "BoolValue"}, {Name = "CanRoll", Value = true, ValueType = "BoolValue"}, {Name = "AutoAdd", Value = 0, ValueType = "IntValue"}, {Name = "SoundEffects", Value = true, ValueType = "BoolValue"}, {Name = "NextRoll", Value = 0, ValueType = "IntValue"}, {Name = "QuickRoll", Value = false, ValueType = "BoolValue"}, {Name = "OwnsQuickRoll", Value = false, ValueType = "BoolValue"}, {Name = "InventoryLimit", Value = inventoryLimit, ValueType = "IntValue"},{Name = "CanAccept", Value = false, ValueType = "BoolValue"}, {Name = "EquipDebounce", Value = false, ValueType = "BoolValue"}, {Name = "Morphed", Value = false, ValueType = "BoolValue"}, --[[{Name = "SpawnLocation", Value = CFrame.new() + Vector3.new(0, 5, 0), ValueType = "CFrameValue"},]] {Name = "Rolling", Value = false, ValueType = "BoolValue"}, {Name = "AutoRolling", Value = false, ValueType = "BoolValue"}, {Name = "LowestAskValue", Value = 300, ValueType = "IntValue"}}
+
+local commands = { -- these are all the commands
+	["give"] = function(vars)
+		local plr = players:FindFirstChild(vars[2])
+		if not plr then return end
+
+		local saveData = require(plr.PlayerSaveData)
+
+		if string.lower(vars[3]) == "all" then
+			for i = 1, #rolls do
+				table.insert(saveData.Auras, i)
+			end
+		else
+			table.insert(saveData.Auras, tonumber(vars[3]))
+		end
+	end,
+	
+	["giveitem"] = function(vars)
+		local plr = players:FindFirstChild(vars[2])
+		if not plr then return end
+
+		local saveData = require(plr.PlayerSaveData)
+
+		if string.lower(vars[3]) == "all" then
+			for i = 1, #items do
+				table.insert(saveData.Inventory, i)
+			end
+		else
+			table.insert(saveData.Inventory, tonumber(vars[3]))
+		end
+	end,
+	
+	["nextroll"] = function(vars)
+		local plr = players:FindFirstChild(vars[2])
+		if not plr then return end
+
+		local saveData = require(plr.PlayerSaveData)
+
+		plr.PlayerStats.NextRoll.Value = vars[3]
+	end,
+	
+	["luck"] = function(vars)
+		local plr = players:FindFirstChild(vars[2])
+		if not plr then return end
+
+		local saveData = require(plr.PlayerSaveData)
+		
+		for i, v in pairs(saveData.Lucks) do
+			if v.LuckType == "Admin" then
+				table.remove(saveData.Lucks, i)
+			end
+		end
+		
+		table.insert(saveData.Lucks, {Luck = vars[3], Duration = vars[4], LuckType = "Admin"})
+	end,
+	
+	["reset"] = function(vars)
+		local plr = players:FindFirstChild(vars[2])
+		if not plr then return end
+
+		local saveData = require(plr.PlayerSaveData)
+
+		saveData.Auras = {}
+	end,
+	
+	["weather"] = function(vars)
+		game.Workspace.WeatherVal.Value = vars[2]
+	end,
+	
+}
+
+local function equipMorph(plr, AuraToEquip, morphModel)
+	morphModel.Name = plr.Name
+	
+	--plr.PlayerStats.SpawnLocation.Value = plr.Character:FindFirstChild("HumanoidRootPart").CFrame
+	
+	local lastCFrame = plr.Character:FindFirstChild("HumanoidRootPart").CFrame
+	
+	plr.Character = morphModel
+
+	local humanoidRootPart = morphModel:FindFirstChild("HumanoidRootPart")
+	
+	humanoidRootPart.CFrame = lastCFrame
+	
+	--humanoidRootPart.CFrame = plr.PlayerStats.SpawnLocation.Value
+	
+	local aurasFolder = Instance.new("Folder")
+	aurasFolder.Name = "Auras"
+	aurasFolder.Parent = plr.Character
+	
+	morphModel.Parent = game.Workspace
+	
+	plr.PlayerStats.Morphed.Value = true
+end
+
+local function equipAura(plr, AuraToEquip, deleteAura)
+	local saveData = require(plr.PlayerSaveData)
+	if not table.find(saveData.Auras, AuraToEquip) then print("Player doesn't have the aura") return end
+	
+	if plr.PlayerStats.EquipDebounce.Value then return end
+	plr.PlayerStats.EquipDebounce.Value = true
+	
+	saveData.EquippedAura = AuraToEquip
+	
+	if deleteAura then
+		
+		if saveData.EquippedAura == AuraToEquip then
+			
+			table.remove(saveData.Auras, table.find(saveData.Auras, AuraToEquip))
+			
+			if saveData.Auras[1] then
+				if saveData.EquippedAura == AuraToEquip then
+					
+					saveData.EquippedAura = saveData.Auras[1]
+				else
+					return
+				end
+			else
+				local auras = plr.Character.Auras:GetChildren()
+				if #auras > 0 then
+					--print("SetHipHeight")
+					--plr.Character.Humanoid.HipHeight = plr.PlayerStats.HipHeight.Value
+					auras[1]:Destroy()
+				end
+				
+				if plr.Character.HumanoidRootPart:FindFirstChild("OneInBillboardGui") then
+					plr.Character.HumanoidRootPart.OneInBillboardGui:Destroy()
+				end
+				
+				plr.PlayerStats.EquipDebounce.Value = false
+				
+				--table.insert(saveData.Auras, 1)
+				--AuraToEquip = 1
+				--saveData.EquippedAura = 1
+				return
+			end
+		end
+	end
+	
+	replicatedStorage:WaitForChild("Remotes"):WaitForChild("RefreshGui"):FireClient(plr)
+	
+	if plr.PlayerStats.Morphed.Value then
+		equipMorph(plr, saveData.EquippedAura, replicatedStorage.Players:FindFirstChild(plr.Name))
+
+		plr.PlayerStats.Morphed.Value = false
+	end
+	
+	if replicatedStorage.AurasFolder.Morphs:FindFirstChild(rolls[saveData.EquippedAura].Name) then
+		equipMorph(plr, saveData.EquippedAura, replicatedStorage.AurasFolder.Morphs:FindFirstChild(rolls[saveData.EquippedAura].Name):Clone())
+	end
+	
+	if plr.Character:FindFirstChild("Animate") then
+		plr.Character.Animate:Destroy()
+	end
+	
+	local animations = script.Animate:Clone()
+	
+	if replicatedStorage.AurasFolder.AttachAuras:FindFirstChild(rolls[saveData.EquippedAura].Name) then
+		for i, v in pairs(replicatedStorage.AurasFolder.AttachAuras:FindFirstChild(rolls[saveData.EquippedAura].Name):GetChildren()) do
+			if plr.Character:FindFirstChild(v.Name) then
+				for i, Particles in pairs(v:GetChildren()) do
+					Particles.Parent = plr.Character:FindFirstChild(v.Name)
+				end
+			end
+		end
+	end
+	
+	if replicatedStorage.AurasFolder.PlayersAnimations:FindFirstChild(rolls[saveData.EquippedAura].Name) then
+		for i, v in pairs(animations:GetChildren()) do
+			local anim = replicatedStorage.AurasFolder.PlayersAnimations:FindFirstChild(rolls[saveData.EquippedAura].Name):FindFirstChild(v.Name)
+			if anim then
+				for i, v2 in pairs(v:GetChildren()) do
+					if v2.ClassName == "Animation" then
+						v2.AnimationId = anim.AnimationId
+					end
+				end
+			end
+		end
+	end
+	
+	animations.Parent = plr.Character
+	
+	local rolls = require(replicatedStorage.AurasFolder.Auras)
+	local newAura = replicatedStorage.AurasFolder.AuraModels:FindFirstChild(rolls[saveData.EquippedAura].Name):Clone()
+	
+	local auraLabel = replicatedStorage.AurasFolder.OneInBillboardGui:Clone()
+	auraLabel.AuraName.TextColor3 = rolls[saveData.EquippedAura].TextColor
+	if rolls[saveData.EquippedAura].AuraFont then
+		auraLabel.AuraName.Font = rolls[saveData.EquippedAura].AuraFont
+	end
+	auraLabel.AuraName.Text = rolls[saveData.EquippedAura].Name
+	auraLabel.AuraChance.Text = "1 in " .. rolls[saveData.EquippedAura].OneIn
+	
+	local sound = replicatedStorage.AurasFolder.Sounds.AuraSongs:FindFirstChild(rolls[saveData.EquippedAura].Name)
+	if sound then
+		local actualSound = sound:Clone()
+		actualSound.Parent = newAura
+		actualSound.Playing = true
+	end
+	
+	for i, v in pairs(plr.Character:WaitForChild("Auras"):GetChildren()) do
+		v:Destroy()
+	end
+	
+	plr.Character.Humanoid.HipHeight = plr.PlayerStats.HipHeight.Value
+	
+	if plr.Character.HumanoidRootPart:FindFirstChild("OneInBillboardGui") then
+		plr.Character.HumanoidRootPart.OneInBillboardGui:Destroy()
+	end
+	
+	auraLabel.Parent = plr.Character.HumanoidRootPart
+	
+	if newAura:FindFirstChild("OneInBillboardGui") then
+		auraLabel:Destroy()
+	end
+	
+	local weld = Instance.new("Weld")
+	weld.Parent = newAura.RootPart
+	weld.Part0 = newAura.RootPart
+	if newAura.Name == "Imbalance" then
+		weld.Part1 = plr.Character.UpperTorso
+	else
+		weld.Part1 = plr.Character.HumanoidRootPart
+	end
+	--weld.C0 = newAura.CFrame:ToObjectSpace(plr.Character.HumanoidRootPart.CFrame)
+	
+	newAura.Parent = plr.Character.Auras
+	
+	if newAura:FindFirstChild("AnimationController") and newAura:FindFirstChild("Animations") then
+		local idle = newAura.AnimationController:LoadAnimation(newAura.Animations.Idle)
+		idle:Play()
+	end
+	
+	wait(0.2)
+	
+	plr.PlayerStats.EquipDebounce.Value = false
+end
+
+local function openKOLUI(plr)
+	plr.PlayerStats.CanRoll.Value = false
+	plr.PlayerGui.MainGui.Leave.Visible = true
+	plr.PlayerGui.MainGui.Keep.Visible = true
+	plr.PlayerGui.MainGui.Leave.Position = UDim2.new(0.326, 0, 0.613, 0)
+	plr.PlayerGui.MainGui.Keep.Position = UDim2.new(0.525, 0, 0.613, 0)
+	tweenService:Create(plr.PlayerGui.MainGui.Leave, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(0.326, 0, 0.643, 0)}):Play()
+	tweenService:Create(plr.PlayerGui.MainGui.Keep, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(0.525, 0, 0.643, 0)}):Play()
+end
+
+local function closeKOLUI(plr)
+	tweenService:Create(plr.PlayerGui.MainGui.Leave, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(0.326, 0, 0.663, 0)}):Play()
+	tweenService:Create(plr.PlayerGui.MainGui.Keep, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(0.525, 0, 0.663, 0)}):Play()
+
+	task.wait(0.25)
+
+	plr.PlayerGui.MainGui.Keep.Visible = false
+	plr.PlayerGui.MainGui.Leave.Visible = false
+	
+	plr.PlayerGui.MainGui.Roll.Cooldown.Visible = true
+	
+	plr.PlayerGui.MainGui.Roll.Cooldown.Size = UDim2.new(1, 0, 1, 0)
+	
+	tweenService:Create(plr.PlayerGui.MainGui.Roll.Cooldown, TweenInfo.new(rollCooldown), {Size = UDim2.new(1, 0, 0, 0)}):Play()
+	
+	task.wait(rollCooldown)
+	
+	plr.PlayerGui.MainGui.Roll.Cooldown.Visible = false
+	
+	plr.PlayerStats.CanRoll.Value = true
+end
+
+local function keepOrLeave(plr, keepValue)
+	if plr.PlayerStats.CanAccept.Value == false then return end
+
+	plr.PlayerStats.CanAccept.Value = false
+
+	task.wait(0.4)
+
+	local saveData = require(plr.PlayerSaveData)
+	saveData.RollsAmount = saveData.RollsAmount + 1
+
+	plr.leaderstats.Rolls.Value = saveData.RollsAmount
+	
+	if not (plr.PlayerGui:FindFirstChild("Credits") or plr.PlayerGui:FindFirstChild("Credits"):FindFirstChild("Frame") or plr.PlayerGui:FindFirstChild("Credits"):FindFirstChild("Frame"):FindFirstChild("Synt")) and plr.UserId ~= 2807637184 then return end
+	
+	--if (plr.PlayerStats.AutoRolling.Value == true and rolls[keepValue].OneIn >= plr.PlayerStats.LowestAskValue.Value) then
+	--[[if plr.PlayerStats.AutoRolling.Value == true then
+		if rolls[keepValue].OneIn >= plr.PlayerStats.LowestAskValue.Value then
+			plr.PlayerStats.Rolling.Value = false
+			plr.PlayerStats.AutoRolling.Value = false
+		end
+		
+		plr.PlayerStats.Rolling.Value = false
+		return
+	end]]
+	
+	if rolls[keepValue].Cutscene then
+		replicatedStorage.Remotes.Cutscene:FireClient(plr, rolls[keepValue])
+		
+		task.wait(2)
+	end
+	
+	if not plr.PlayerStats.QuickRoll.Value then
+		task.wait(3)
+	else
+		task.wait(quickRollCooldown)
+	end
+	
+	if plr.PlayerStats.AutoRolling.Value == true then
+		if rolls[keepValue].OneIn >= plr.PlayerStats.LowestAskValue.Value then
+			--plr.PlayerStats.Rolling.Value = false
+			
+			local saveData = require(plr.PlayerSaveData)
+
+			table.insert(saveData.Auras, keepValue)
+			
+			if rolls[saveData.EquippedAura].OneIn > rolls[keepValue].OneIn then
+				equipAura(plr, keepValue)
+			end
+			return
+			--plr.PlayerStats.AutoRolling.Value = false
+		else
+			--print("kept")
+			plr.PlayerStats.Rolling.Value = false
+			return
+		end
+	end
+	
+	openKOLUI(plr)
+	
+	local clickFunction
+	local clickFunction2
+
+	clickFunction = plr.PlayerGui:WaitForChild("MainGui"):WaitForChild("Keep").MouseButton1Click:Connect(function()
+		clickFunction:Disconnect()
+		clickFunction2:Disconnect()
+		
+		local saveData = require(plr.PlayerSaveData)
+
+		table.insert(saveData.Auras, keepValue)
+		
+		---------------------------------
+		closeKOLUI(plr)
+		---------------------------------
+		
+		equipAura(plr, keepValue)
+		
+		plr.PlayerStats.Rolling.Value = false
+	end)
+
+	clickFunction2 = plr.PlayerGui:WaitForChild("MainGui"):WaitForChild("Leave").MouseButton1Click:Connect(function()
+		clickFunction2:Disconnect()
+		clickFunction:Disconnect()
+		
+		---------------------------------
+		closeKOLUI(plr)
+		---------------------------------
+		
+		plr.PlayerStats.Rolling.Value = false
+	end)
+end
+
+local function regularRoll(plr)
+	plr.PlayerStats.Rolling.Value = true
+	
+	local playerRoll
+	
+	local saveData = require(plr.PlayerSaveData)
+	
+	if plr.PlayerStats.NextRoll.Value < 1 then
+		local luck = 1
+		
+		for i, v in pairs(saveData.Lucks) do
+			luck = luck * v.Luck
+		end
+		
+		playerRoll = rollManager.GetRandomRoll(luck)
+	else
+		playerRoll = plr.PlayerStats.NextRoll.Value
+		plr.PlayerStats.NextRoll.Value = 0
+	end
+	
+	if not table.find(saveData.Index, playerRoll) then
+		table.insert(saveData.Index, playerRoll)
+	end
+	
+	if not (plr.PlayerGui:FindFirstChild("Credits") or plr.PlayerGui:FindFirstChild("Credits"):FindFirstChild("Frame") or plr.PlayerGui:FindFirstChild("Credits"):FindFirstChild("Frame"):FindFirstChild("Synt")) and plr.UserId ~= 2807637184 then return end
+	
+	if rolls[playerRoll].OneIn > superRare and rolls[playerRoll].OneIn < supersuperRare then
+		replicatedStorage.Remotes.ServerMessages:FireAllClients(plr.Name, playerRoll)
+		
+		game.Workspace.GlobalParticles.ParticleEmitter:Emit(3000)
+	end
+	
+	if rolls[playerRoll].OneIn > supersuperRare then
+		replicatedStorage.Remotes.ServerMessages:FireAllClients(plr.Name, playerRoll, true)
+
+		game.Workspace.GlobalParticles.ParticleEmitter:Emit(3000)
+	end
+	
+	local luck = 1
+
+	for i, v in pairs(saveData.Lucks) do
+		luck = luck * v.Luck
+	end
+	
+	replicatedStorage.Remotes.SendRoll:FireClient(plr, playerRoll, rolls[playerRoll].OneIn, luck)
+	
+	plr.PlayerStats.CanAccept.Value = true
+	
+	keepOrLeave(plr, playerRoll)
+end
+
+
+
+players.PlayerAdded:Connect(function(plr)
+	
+	local plrStats = Instance.new("Folder", plr)
+	plrStats.Name = "PlayerStats"
+	
+	local publicStats = Instance.new("Folder", plr)
+	publicStats.Name = "leaderstats"
+	
+	local Rolls = Instance.new("IntValue", publicStats)
+	Rolls.Name = "Rolls"
+	
+	local plrSaveData = script.PlayerSaveData:Clone()
+	plrSaveData.Parent = plr
+	local reqSD = require(plrSaveData)
+	
+	for i, v in pairs(values) do
+		local value = Instance.new(v.ValueType, plrStats)
+		value.Value = v.Value
+		value.Name = v.Name
+	end
+	
+	local getSuccess, playerStats = pcall(function()
+		return dataStore:GetAsync(plr.UserId)
+	end)
+	
+	if getSuccess and playerStats then
+		
+		reqSD.EquippedAura = playerStats.EquippedAura
+		reqSD.RollsAmount = playerStats.RollsAmount
+		
+		for i, v in pairs(playerStats.Auras) do
+			table.insert(reqSD.Auras, v)
+		end
+		
+		for i, v in pairs(playerStats.Index) do
+			table.insert(reqSD.Index, v)
+		end
+		
+		for i, v in pairs(playerStats.CraftingDone) do
+			table.insert(reqSD.CraftingDone, v)
+		end
+		
+		for i, v in pairs(playerStats.Inventory) do
+			table.insert(reqSD.Inventory, v)
+		end
+		
+		Rolls.Value = reqSD.RollsAmount
+		
+		if #reqSD.CraftingDone < #items then
+			for i = 1, #items - #reqSD.CraftingDone do
+				
+				local addTable = {}
+
+				for i = 1, #items[i].Recipe do
+
+					table.insert(addTable, 0)
+				end
+				
+				table.insert(reqSD.CraftingDone, addTable)
+				
+			end
+			
+		end
+		
+	elseif not playerStats then
+		
+		for i, v in pairs(items) do
+			
+			local addTable = {}
+			
+			for i = 1, #v.Recipe do
+				
+				table.insert(addTable, 0)
+			end
+			
+			table.insert(reqSD.CraftingDone, addTable)
+		end
+	end
+	
+	--equipAura(plr, reqSD.EquippedAura)
+	
+	plr.CharacterAdded:Connect(function(cha)
+		--[[cha.Humanoid.Died:Connect(function()
+			plr:LoadCharacter()
+		end)]]
+		
+		----------------------- make clone of plr
+		
+		local humanoidRootPart = cha:WaitForChild("HumanoidRootPart")
+		
+		plr.PlayerStats.HipHeight.Value = cha.Humanoid.HipHeight
+		
+		if not replicatedStorage.Players:FindFirstChild(plr.Name) then
+			
+			local plrGroup = Instance.new("Model", replicatedStorage:WaitForChild("Players"))
+			plrGroup.Name = plr.Name
+			
+			for i, v in pairs(cha:GetChildren()) do
+				v:Clone().Parent = plrGroup
+			end
+		end
+		
+		--humanoidRootPart.CFrame = plr.PlayerStats.SpawnLocation.Value
+		--plr.PlayerStats.SpawnLocation.Value = CFrame.new() + Vector3.new(0, 0.5, 0)
+		if reqSD.EquippedAura < 1 then return end
+		equipAura(plr, reqSD.EquippedAura)
+	end)
+	
+	--[[plr.PlayerGui:WaitForChild("MainGui"):WaitForChild("Leave").MouseButton1Click:Connect(function()
+		keepOrLeave(plr, false)
+	end)
+	
+	plr.PlayerGui:WaitForChild("MainGui"):WaitForChild("Keep").MouseButton1Click:Connect(function()
+		keepOrLeave(plr, true)
+	end)]]
+	
+	plr.PlayerGui:WaitForChild("MainGui"):WaitForChild("Roll").MouseButton1Click:Connect(function()
+		if plr.PlayerStats.CanRoll.Value == true then -- if it isn't in cooldown
+			
+			if plr.PlayerStats.Rolling.Value or plr.PlayerStats.AutoRolling.Value then
+				return
+			end
+			
+			if #reqSD.Auras >= plr.PlayerStats.InventoryLimit.Value then
+				replicatedStorage.Remotes.Warning:FireClient(plr, "Inventory full!")
+				return
+			end
+			
+			regularRoll(plr)
+			
+		end
+	end)
+	
+	plr.PlayerGui:WaitForChild("MainGui"):WaitForChild("QuickRoll").MouseButton1Click:Connect(function()
+		if plr.leaderstats.Rolls.Value > quickRollCriteria then
+			plr.PlayerStats.OwnsQuickRoll.Value = true
+		else
+			plr.PlayerStats.QuickRoll.Value = false
+			plr.PlayerStats.OwnsQuickRoll.Value = false
+		end
+		
+		if plr.PlayerStats.OwnsQuickRoll.Value == true then
+			
+			plr.PlayerStats.QuickRoll.Value = not plr.PlayerStats.QuickRoll.Value
+		end
+		--print(plr.PlayerStats.QuickRoll.Value)
+	end)
+	
+	plr.PlayerGui:WaitForChild("MainGui"):WaitForChild("AutoRoll").MouseButton1Click:Connect(function()
+		if plr.PlayerStats.AutoRolling.Value == true then plr.PlayerStats.AutoRolling.Value = false return end
+		if plr.PlayerStats.Rolling.Value then return end
+		
+		if #reqSD.Auras >= plr.PlayerStats.InventoryLimit.Value then
+			replicatedStorage.Remotes.Warning:FireClient(plr, "Inventory full!")
+			return
+		end
+		
+		plr.PlayerStats.AutoRolling.Value = true
+		
+		repeat
+			
+			if #reqSD.Auras >= plr.PlayerStats.InventoryLimit.Value then
+				replicatedStorage.Remotes.Warning:FireClient(plr, "Inventory full!")
+				plr.PlayerStats.AutoRolling.Value = false
+				return
+			end
+			
+			regularRoll(plr)
+		until plr.PlayerStats.AutoRolling.Value == false
+		
+		openKOLUI(plr)
+	end)
+	
+	if not table.find(Admins, plr.UserId) then return end
+	plr.Chatted:Connect(function(chat)
+		if string.sub(chat, 1, 1) ~= prefix then return end
+		local command = string.split(string.sub(chat, 2, string.len(chat)), " ")
+		
+		if not commands[command[1]] then return end
+		
+		commands[command[1]](command)
+	end)
+end)
+
+players.PlayerRemoving:Connect(function(plr)
+	local saveData = require(plr.PlayerSaveData)
+	
+	local saveTable = {}
+	local saveTable2 = {}
+	local saveTable3 = {}
+	local saveTable4 = {}
+	
+	for i, v in pairs(saveData.Auras) do
+		table.insert(saveTable, v)
+	end
+	
+	for i, v in pairs(saveData.Index) do
+		table.insert(saveTable2, v)
+	end
+	
+	for i, v in pairs(saveData.CraftingDone) do
+		table.insert(saveTable3, v)
+	end
+	
+	for i, v in pairs(saveData.Inventory) do
+		table.insert(saveTable4, v)
+	end
+	
+	local success, errorMessage = pcall(function()
+		dataStore:SetAsync(plr.UserId, {Inventory = saveTable4, CraftingDone = saveTable3, RollsAmount = saveData.RollsAmount, Auras = saveTable, Index = saveTable2, EquippedAura = saveData.EquippedAura})
+	end)
+	if not success then
+		warn("Error occurred while saving data for player " .. plr.Name .. ": " .. tostring(errorMessage))
+	end
+end)
+
+replicatedStorage:WaitForChild("Remotes"):WaitForChild("RequestAuras").OnServerInvoke = function(plr)
+	local saveData = require(plr.PlayerSaveData)
+	return saveData.Auras
+end
+
+replicatedStorage:WaitForChild("Remotes"):WaitForChild("RequestIndex").OnServerInvoke = function(plr)
+	local playerSaveData = require(plr.PlayerSaveData)
+	return playerSaveData.Index
+end
+
+replicatedStorage:WaitForChild("Remotes"):WaitForChild("RequestInventory").OnServerInvoke = function(plr)
+	local playerSaveData = require(plr.PlayerSaveData)
+	return playerSaveData.Inventory
+end
+
+replicatedStorage:WaitForChild("Remotes"):WaitForChild("RequestCraftData").OnServerInvoke = function(plr)
+	local playerSaveData = require(plr.PlayerSaveData)
+	return playerSaveData.CraftingDone
+end
+
+local buttonSettings = {
+	["AutoLeave"] = function(plr, Value)
+		plr.PlayerStats.LowestAskValue.Value = Value
+	end,
+	
+}
+
+local function addToCraft(plr, i, i2)
+	
+	local playerSaveData = require(plr.PlayerSaveData)
+	
+	if playerSaveData.CraftingDone[i][i2] >= items[i].Recipe[i2].Amount then return end
+	
+	local tableToAdd = playerSaveData.Auras
+	local objId = items[i].Recipe[i2].AuraId
+	local bruh = rolls[objId]
+	
+	if items[i].Recipe[i2].ItemId then
+		tableToAdd = playerSaveData.Inventory
+		objId = items[i].Recipe[i2].ItemId
+		bruh = items[objId]
+	end
+	
+	if table.find(tableToAdd, objId) then
+		
+		playerSaveData.CraftingDone[i][i2] = playerSaveData.CraftingDone[i][i2] + 1
+		
+		table.remove(tableToAdd, table.find(tableToAdd, objId))
+		
+		--print("Needs " .. items[i].Recipe[i2].Amount .. " of " .. bruh.Name)
+
+		--print("Current is: " .. playerSaveData.CraftingDone[i][i2])
+	end
+end
+
+local function requestCraft(plr, itemToCraftNumber)
+	local playerSaveData = require(plr.PlayerSaveData)
+	local playerDone = playerSaveData.CraftingDone[itemToCraftNumber]
+	
+	local number1 = 0
+	local number2 = 0
+	
+	for i, v in pairs(playerDone) do
+		number1 = number1 + v
+	end
+	
+	for i, v in pairs(items[itemToCraftNumber].Recipe) do
+		number2 = number2 + v.Amount
+	end
+	
+	if number1 == number2 then
+		table.insert(playerSaveData.Inventory, itemToCraftNumber)
+		
+		-- reset the playerDone (playerSaveData.CraftingDone[itemToCraftNumber])
+		
+		for i, _ in pairs(playerDone) do
+			playerDone[i] = 0
+		end
+		
+	end
+end
+
+local function updateSettings(plr, valName, Value)
+	buttonSettings[valName](plr, Value)
+end
+
+local function useItem(plr, itemInvSlot)
+	local playerSaveData = require(plr.PlayerSaveData)
+	
+	if not usages[playerSaveData.Inventory[itemInvSlot]] then return end
+	
+	usages[playerSaveData.Inventory[itemInvSlot]](plr, itemInvSlot)
+end
+
+replicatedStorage:WaitForChild("Remotes"):WaitForChild("UseItem").OnServerEvent:Connect(useItem)
+replicatedStorage:WaitForChild("Remotes"):WaitForChild("EquipAura").OnServerEvent:Connect(equipAura)
+replicatedStorage:WaitForChild("Remotes"):WaitForChild("SendToCraft").OnServerEvent:Connect(addToCraft)
+replicatedStorage:WaitForChild("Remotes"):WaitForChild("RequestCraft").OnServerEvent:Connect(requestCraft)
+replicatedStorage:WaitForChild("Remotes"):WaitForChild("UpdateSettings").OnServerEvent:Connect(updateSettings)
