@@ -1,0 +1,92 @@
+local replicatedStorage = game:GetService("ReplicatedStorage")
+
+local weathers = replicatedStorage:WaitForChild("Weather")
+
+local workspaceWeather = game:GetService("Workspace"):WaitForChild("Weather")
+
+local ChangeCooldown = 600 -- seconds between Weathers
+
+local function setColorTo(typeColor)
+	
+	for _, group in pairs(game.Workspace:WaitForChild("ColourParts"):GetChildren()) do
+		
+		local setColor = group.Colors[typeColor].Value
+		
+		for i, part in pairs(group:GetChildren()) do
+			
+			if part.ClassName =="Part" then
+				
+				part.Color = setColor
+			end
+		end
+	end
+end
+
+local function setWeather(weather)
+	
+	for i, v in pairs(workspaceWeather:GetChildren()) do
+		v:Destroy()
+	end
+	
+	for i, v in pairs(game.Lighting:GetChildren()) do
+		v:Destroy()
+	end
+	
+	for i, v in pairs(weathers[weather].Workspace:GetChildren()) do
+		v:Clone().Parent = workspaceWeather
+	end
+	
+	for i, v in pairs(weathers[weather].Lighting:GetChildren()) do
+		v:Clone().Parent = game.Lighting
+	end
+	
+	if weathers[weather]:FindFirstChild("NewColours") then
+		setColorTo(weather)
+	else
+		setColorTo("Origin")
+	end
+	
+	game.Lighting.ClockTime = weathers[weather].ClockTime.Value
+end
+
+setWeather("Day")
+
+local weathers = {
+	{Name = "Day", Chance = 50},
+	{Name = "Night", Chance = 20},
+	{Name = "Snow", Chance = 15},
+	{Name = "Rain", Chance = 10}, -- 10% chance to rain
+	{Name = "Glitch", Chance = 5} -- 5% chance to glitch
+}
+
+local function chooseRand()
+	local random = math.random(1, 100)
+
+	local totalChance = 0
+
+	for i, v in pairs(weathers) do
+
+		totalChance = totalChance + v.Chance
+
+		if totalChance >= random then
+
+			print("Set to " .. v.Name)
+
+			--setWeather(v.Name)
+			
+			game.Workspace.WeatherVal.Value = v.Name
+			
+			return
+		end
+	end
+end
+
+game.Workspace:WaitForChild("WeatherVal").Changed:Connect(function()
+	setWeather(game.Workspace.WeatherVal.Value)
+end)
+
+while true do
+	task.wait(ChangeCooldown)
+	
+	chooseRand()
+end
