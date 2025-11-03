@@ -1,0 +1,355 @@
+local tweenService = game:GetService("TweenService")
+
+local module = {
+	[1] = function (plr, colour)
+		local frame = plr.PlayerGui.MainGui.Cutscene
+		local star = plr.PlayerGui.MainGui.Cutscene.Star
+		star.Size = UDim2.new(0.172, 0, 0.363, 0)
+		star.Transparency = 1
+		frame.Transparency = 1
+
+		local rotationTween = tweenService:Create(star, TweenInfo.new(2, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), {Rotation = 360})
+		rotationTween:Play()
+
+		tweenService:Create(star, TweenInfo.new(0.4), {ImageTransparency = 0}):Play()
+		tweenService:Create(star, TweenInfo.new(0.4), {Size = UDim2.new(0.133, 0, 0.28, 0)}):Play()
+		tweenService:Create(star, TweenInfo.new(0.4), {ImageColor3 = colour}):Play()
+		tweenService:Create(frame, TweenInfo.new(0.4), {Transparency = 0}):Play()
+
+		frame.Visible = true
+
+		wait(0.6)
+
+		tweenService:Create(star, TweenInfo.new(0.4), {Size = UDim2.new(0.133 * 2, 0, 0.28 * 2, 0)}):Play()
+
+		wait(0.5)
+
+		tweenService:Create(star, TweenInfo.new(3.9), {Size = UDim2.new(0.133 * 0.6, 0, 0.28 * 0.6, 0)}):Play()
+
+		wait(3)
+
+		tweenService:Create(star, TweenInfo.new(0.9), {ImageTransparency = 1}):Play()
+		tweenService:Create(frame, TweenInfo.new(0.9), {Transparency = 1}):Play()
+
+		wait(0.9)
+
+		rotationTween:Cancel()
+
+		frame.Visible = false
+	end,
+	
+	[2] = function (plr, colour)
+		local frame = plr.PlayerGui.MainGui.Cutscene
+		local star = plr.PlayerGui.MainGui.Cutscene.Star
+		star.Size = UDim2.new(0.172, 0, 0.363, 0)
+		star.Transparency = 1
+		frame.Transparency = 1
+		
+		tweenService:Create(frame, TweenInfo.new(0.4), {Transparency = 0}):Play()
+
+		frame.Visible = true
+		
+		wait(0.4)
+		
+		local leftEyelid = plr.PlayerGui.MainGui.Cutscene.LeftEyeLid
+		local rightEyelid = plr.PlayerGui.MainGui.Cutscene.RightEyeLid
+		
+		local rightEye = plr.PlayerGui.MainGui.Cutscene.RightEye
+		local leftEye = plr.PlayerGui.MainGui.Cutscene.LeftEye
+		
+		leftEyelid.Size = UDim2.new(0.172, 0, 0.363, 0)
+		rightEyelid.Size = UDim2.new(0.172, 0, 0.363, 0)
+		leftEyelid.Position = UDim2.new(0.3, 0, 0.52, 0)
+		rightEyelid.Position = UDim2.new(0.7, 0, 0.52, 0)
+		
+		leftEye.ImageTransparency = 1
+		rightEye.ImageTransparency = 1
+		
+		leftEye.Position = UDim2.new(0.3, 0, 0.5, 0)
+		rightEye.Position = UDim2.new(0.7, 0, 0.5, 0)
+		
+		tweenService:Create(leftEye, TweenInfo.new(0.4), {ImageTransparency = 0}):Play()
+		tweenService:Create(rightEye, TweenInfo.new(0.4), {ImageTransparency = 0}):Play()
+		tweenService:Create(leftEyelid, TweenInfo.new(0.4), {Position = UDim2.new(0.3, 0, 0.51, 0)}):Play()
+		tweenService:Create(rightEyelid, TweenInfo.new(0.4), {Position = UDim2.new(0.7, 0, 0.51, 0)}):Play()
+		
+		leftEyelid.Visible = true
+		rightEyelid.Visible = true
+		leftEye.Visible = true
+		rightEye.Visible = true
+		
+		star.Rotation = 0
+		
+		local rotationTween = tweenService:Create(star, TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), {Rotation = 360})
+		rotationTween:Play()
+		
+		tweenService:Create(star, TweenInfo.new(0.4), {ImageTransparency = 0}):Play()
+		tweenService:Create(star, TweenInfo.new(0.4), {Size = UDim2.new(0.133, 0, 0.28, 0)}):Play()
+		tweenService:Create(star, TweenInfo.new(0.4), {ImageColor3 = colour}):Play()
+		
+		wait(0.6)
+		
+		tweenService:Create(leftEyelid, TweenInfo.new(3), {Size = UDim2.new(leftEyelid.Size.X.Scale * 1.5, 0, leftEyelid.Size.Y.Scale * 1.5, 0)}):Play()
+		tweenService:Create(rightEyelid, TweenInfo.new(3), {Size = UDim2.new(rightEyelid.Size.X.Scale * 1.5, 0, rightEyelid.Size.Y.Scale * 1.5, 0)}):Play()
+		--[[tweenService:Create(leftEyelid, TweenInfo.new(3), {Position = UDim2.new(0.3, 0, 0.5, 0)}):Play()
+		tweenService:Create(rightEyelid, TweenInfo.new(3), {Position = UDim2.new(0.7, 0, 0.5, 0)}):Play()]]
+		
+		tweenService:Create(star, TweenInfo.new(0.4), {Size = UDim2.new(0.133 * 2, 0, 0.28 * 2, 0)}):Play()
+
+		wait(0.5)
+
+		tweenService:Create(star, TweenInfo.new(3.9), {Size = UDim2.new(0.133 * 0.6, 0, 0.28 * 0.6, 0)}):Play()
+
+		wait(3)
+
+		tweenService:Create(leftEye, TweenInfo.new(0.9), {Position = UDim2.new(-0.172, 0, 0.5, 0)}):Play()
+		tweenService:Create(rightEye, TweenInfo.new(0.9), {Position = UDim2.new(1.172, 0, 0.5, 0)}):Play()
+		tweenService:Create(leftEyelid, TweenInfo.new(0.9), {Position = UDim2.new(-0.172, 0, 0.5, 0)}):Play()
+		tweenService:Create(rightEyelid, TweenInfo.new(0.9), {Position = UDim2.new(1.172, 0, 0.5, 0)}):Play()
+		
+		wait(0.3)
+		
+		tweenService:Create(star, TweenInfo.new(0.6), {ImageTransparency = 1}):Play()
+		tweenService:Create(frame, TweenInfo.new(0.6), {Transparency = 1}):Play()
+		
+		tweenService:Create(star, TweenInfo.new(0.6), {Size = UDim2.new(star.Size.X.Scale * 6, 0, star.Size.Y.Scale * 6, 0)}):Play()
+		
+		wait(0.6)
+		
+		leftEyelid.Visible = false
+		rightEyelid.Visible = false
+		leftEye.Visible = false
+		rightEye.Visible = false
+		
+		rotationTween:Cancel()
+		
+		frame.Visible = false
+	end,
+	
+	[3] = function (plr, colour)
+		local frame = plr.PlayerGui.MainGui.Cutscene
+		local star = plr.PlayerGui.MainGui.Cutscene.Star
+		local circle = script.Circle
+		star.Size = UDim2.new(0.172, 0, 0.363, 0)
+		star.Transparency = 1
+		frame.Transparency = 1
+
+		local rotationTween = tweenService:Create(star, TweenInfo.new(2, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), {Rotation = 360})
+		rotationTween:Play()
+
+		tweenService:Create(star, TweenInfo.new(0.4), {ImageTransparency = 0}):Play()
+		tweenService:Create(star, TweenInfo.new(0.4), {Size = UDim2.new(0.133, 0, 0.28, 0)}):Play()
+		tweenService:Create(star, TweenInfo.new(0.4), {ImageColor3 = colour}):Play()
+		tweenService:Create(frame, TweenInfo.new(0.4), {Transparency = 0}):Play()
+
+		frame.Visible = true
+
+		wait(0.4)
+		
+		local waitBetweenT = 2
+		
+		for i = 1, 10 do
+			local circleUI = circle:Clone()
+			circleUI.Size = UDim2.new(0, 0, 0, 0)
+			circleUI.Parent = frame
+			tweenService:Create(circleUI, TweenInfo.new(waitBetweenT), {Size = UDim2.new(0.133 * 6, 0, 0.28 * 6, 0)}):Play()
+			tweenService:Create(circleUI, TweenInfo.new(waitBetweenT), {ImageTransparency = 1}):Play()
+			
+			wait(waitBetweenT / 2)
+			waitBetweenT = waitBetweenT - 0.2
+		end
+		
+		tweenService:Create(star, TweenInfo.new(1), {Size = UDim2.new(0.133 * 10, 0, 0.28 * 10, 0)}):Play()
+		tweenService:Create(frame, TweenInfo.new(1.1), {Transparency = 1}):Play()
+		tweenService:Create(star, TweenInfo.new(1), {ImageTransparency = 1}):Play()
+		
+		wait(1)
+
+		rotationTween:Cancel()
+
+		frame.Visible = false
+	end,
+	
+	[4] = function (plr, colour)
+		local frame = plr.PlayerGui.MainGui.Cutscene
+		local star = plr.PlayerGui.MainGui.Cutscene.Star
+		
+		local glow = plr.PlayerGui.MainGui.Cutscene.Glow
+		glow.Visible = true
+		glow.ImageTransparency = 1
+		glow.Transparency = 1
+		
+		star.Size = UDim2.new(0.172, 0, 0.363, 0)
+		star.Transparency = 1
+		frame.Transparency = 1
+		frame.BackgroundColor3 = Color3.new(0, 0, 0)
+		
+		tweenService:Create(glow, TweenInfo.new(3), {ImageColor3 = colour}):Play()
+		
+		--tweenService:Create(glow, TweenInfo.new(4, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {Transparency = 0.7}):Play()
+		
+		tweenService:Create(glow, TweenInfo.new(4, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {ImageTransparency = 0.3}):Play()
+		
+		local rotationTween = tweenService:Create(star, TweenInfo.new(2, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), {Rotation = 360})
+		rotationTween:Play()
+
+		tweenService:Create(star, TweenInfo.new(0.4), {ImageTransparency = 0}):Play()
+		tweenService:Create(star, TweenInfo.new(0.4), {Size = UDim2.new(0.133, 0, 0.28, 0)}):Play()
+		tweenService:Create(star, TweenInfo.new(0.4), {ImageColor3 = colour}):Play()
+		tweenService:Create(frame, TweenInfo.new(0.4), {Transparency = 0}):Play()
+
+		frame.Visible = true
+
+		wait(0.6)
+
+		tweenService:Create(star, TweenInfo.new(0.4), {Size = UDim2.new(0.133 * 2, 0, 0.28 * 2, 0)}):Play()
+
+		wait(0.5)
+
+		tweenService:Create(star, TweenInfo.new(3.9), {Size = UDim2.new(0.133 * 0.6, 0, 0.28 * 0.6, 0)}):Play()
+
+		wait(3)
+		
+		tweenService:Create(frame, TweenInfo.new(0.9), {BackgroundColor3 = colour}):Play()
+		
+		tweenService:Create(star, TweenInfo.new(0.9), {ImageTransparency = 1}):Play()
+		tweenService:Create(frame, TweenInfo.new(0.9), {Transparency = 1}):Play()
+		
+		tweenService:Create(glow, TweenInfo.new(0.9, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {ImageTransparency = 1}):Play()
+		
+		wait(0.9)
+
+		rotationTween:Cancel()
+
+		frame.Visible = false
+	end,
+	
+	[5] = function (plr, colour)
+
+		local origin = plr.Character.HumanoidRootPart.CFrame
+
+		local model = plr.Character
+
+		local gotArea = script.Got:Clone()
+
+		plr.PlayerGui.ScreenGui.Enabled = true
+		local frame = plr.PlayerGui.ScreenGui.Frame
+
+		--plr.PlayerGui.MainGui.RollFrame.Visible = false
+		frame.Visible = true
+		frame.Transparency = 1
+
+		for i = 1, 4 do
+			task.wait(0.4)
+			tweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {Transparency = 0}):Play()
+			task.wait(0.4)
+			tweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {Transparency = 1}):Play()
+		end
+
+		plr.PlayerGui.MainGui.Enabled = false
+
+		model.HumanoidRootPart.CFrame = gotArea.tpPart.CFrame
+
+		gotArea.Parent = game.Workspace
+		
+		local beforeCamType = game.Workspace.CurrentCamera.CameraType
+		local beforeCamCFrame = game.Workspace.CurrentCamera.CFrame
+		
+		game.Workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+		game.Workspace.CurrentCamera.CFrame = gotArea.camPart.CFrame
+
+		task.wait(0.8)
+
+		model.Humanoid.WalkToPoint = gotArea.Effect.Position
+
+		task.wait(0.5)
+
+		tweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {Transparency = 0}):Play()
+
+		task.wait(0.4)
+
+		tweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {Transparency = 1}):Play()
+
+		plr.PlayerGui.MainGui.Enabled = true
+
+		--game.Workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+		game.Workspace.CurrentCamera.CameraType = beforeCamType
+		game.Workspace.CurrentCamera.CFrame = beforeCamCFrame
+
+		model.HumanoidRootPart.CFrame = origin
+		gotArea:Destroy()
+	end,
+	
+	[6] = function (plr, colour)
+
+		local origin = plr.Character.HumanoidRootPart.CFrame
+
+		local model = plr.Character
+
+		local gotArea = script.OverlordLair:Clone()
+
+		plr.PlayerGui.ScreenGui.Enabled = true
+		local frame = plr.PlayerGui.ScreenGui.Frame
+
+		--plr.PlayerGui.MainGui.RollFrame.Visible = false
+		frame.Visible = true
+		frame.Transparency = 1
+
+		for i = 1, 4 do
+			task.wait(0.4)
+			tweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {Transparency = 0}):Play()
+			task.wait(0.4)
+			tweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {Transparency = 1}):Play()
+		end
+
+		plr.PlayerGui.MainGui.Enabled = false
+
+		model.HumanoidRootPart.CFrame = gotArea.SpawnPart.CFrame
+
+		gotArea.Parent = game.Workspace
+		
+		local beforeCamType = game.Workspace.CurrentCamera.CameraType
+		local beforeCamCFrame = game.Workspace.CurrentCamera.CFrame
+		
+		game.Workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+		game.Workspace.CurrentCamera.CFrame = gotArea.CamPart.CFrame
+
+		task.wait(0.8)
+
+		model.Humanoid.WalkToPoint = gotArea.WalkTo.Position
+		
+		task.wait(2)
+		
+		local textUI = script.Overlord:Clone()
+		textUI.Parent = plr.PlayerGui
+		
+		local toSay = "How did you find me..."
+		
+		for i = 1, string.len(toSay) do
+			textUI.Frame.TextLabel.Text = string.sub(toSay, 1, i)
+			task.wait(0.035)
+		end
+		
+		-- say something
+		
+		task.wait(3)
+
+		tweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {Transparency = 0}):Play()
+
+		task.wait(0.4)
+
+		tweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {Transparency = 1}):Play()
+
+		plr.PlayerGui.MainGui.Enabled = true
+
+		--game.Workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+		game.Workspace.CurrentCamera.CameraType = beforeCamType
+		game.Workspace.CurrentCamera.CFrame = beforeCamCFrame
+
+		model.HumanoidRootPart.CFrame = origin
+		gotArea:Destroy()
+		textUI:Destroy()
+	end,
+}
+
+return module
