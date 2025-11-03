@@ -1,0 +1,21 @@
+local module = {
+	EquippedAura = 0,
+	RollsAmount = 0,
+	Auras = {
+		
+	},
+	Lucks = {
+		
+	},
+	Index = {
+		
+	},
+	Inventory = {
+		
+	},
+	CraftingDone = {
+		
+	}
+}
+
+return module
