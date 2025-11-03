@@ -1,0 +1,35 @@
+local guaranteedAuraID = 24 --"onett" aura ID
+
+local function rollAura(plr)
+	local playerSaveData = require(plr.PlayerSaveData)
+
+	if playerSaveData.GuaranteedOnett then
+
+		table.insert(playerSaveData.Auras, guaranteedAuraID)
+
+		playerSaveData.RollsAmount = playerSaveData.RollsAmount - 1
+
+		playerSaveData.GuaranteedOnett = false
+
+		print("granted" .. plr.Name, "Onett")
+
+		game.ReplicatedStorage.Remotes.UpdAuras:FireClient(plr, playerSaveData.Auras)
+		return
+	end
+
+	local rollNumber = math.random(1, 75)
+	print("Rolled a number: " .. rollNumber)
+
+	if rollNumber > 50 then
+
+		playerSaveData.GuaranteedOnett = true
+	else
+
+		local randomAuraID = math.random(1, 100)
+		table.insert(playerSaveData.Auras, randomAuraID)
+
+		playerSaveData.RollsAmount = playerSaveData.RollsAmount - 1
+
+		game.ReplicatedStorage.Remotes.UpdAuras:FireClient(plr, playerSaveData.Auras)
+	end
+end
