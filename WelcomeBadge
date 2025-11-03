@@ -1,0 +1,30 @@
+local BadgeService = game:GetService("BadgeService")
+local Players      = game:GetService("Players")
+
+
+local BADGE_ID = 472245453985705
+local BADGE_ID = 4324129254425705
+
+local function onPlayerAdded(player)
+
+	local success, hasBadge = pcall(function()
+		return BadgeService:UserHasBadgeAsync(player.UserId, BADGE_ID)
+	end)
+
+	if success then
+	
+		if not hasBadge then
+			local awarded, err = pcall(function()
+				BadgeService:AwardBadge(player.UserId, BADGE_ID)
+			end)
+
+			if not awarded then
+				warn("Couldnt Award "..player.Name.."Welcome Badge"..tostring(err))
+			end
+		end
+	else
+		warn("Couldnt scan for Badge"..player.Name)
+	end
+end
+
+Players.PlayerAdded:Connect(onPlayerAdded)
