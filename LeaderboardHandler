@@ -1,0 +1,101 @@
+local dataStoreService = game:GetService("DataStoreService")
+local playersDataStore = dataStoreService:GetDataStore("PlayersAuraStats18")
+local rollsDataStore = dataStoreService:GetOrderedDataStore("RollsStore3")
+
+-- Table to store player data in-memory
+local playerDataStore = {}
+
+-- Function to load player data
+local function loadPlayerData(player)
+	local playerKey = player.UserId
+	local success, playerData = pcall(function()
+		return playersDataStore:GetAsync(playerKey)
+	end)
+
+	if success then
+		if not playerData then
+			playerData = { RollsAmount = 0 }
+		end
+
+		playerDataStore[player.UserId] = playerData
+		local rollsValue = playerData.RollsAmount or 0
+
+		-- Update RollsStore regardless of the rolls value
+		local success2, errorMessage2 = pcall(function()
+			rollsDataStore:SetAsync(playerKey, rollsValue)
+		end)
+	else
+		warn("Error loading player data for player " .. player.UserId .. ": " .. (playerData or "No data"))
+	end
+end
+
+-- Function to save player data
+local function savePlayerData(player)
+	local playerKey = "player_" .. player.UserId
+	local playerData = playerDataStore[player.UserId]
+
+	if playerData then
+		local success, errorMessage = pcall(function()
+			playersDataStore:SetAsync(playerKey, playerData)
+		end)
+	else
+		warn("No data found for player " .. player.UserId)
+	end
+end
+
+local function getTopPlayer()
+	local success, pages = pcall(function()
+		return rollsDataStore:GetSortedAsync(false, 10) -- false means descending order
+	end)
+
+	if success then
+		local topPlayers = pages:GetCurrentPage()
+
+		return topPlayers
+	else
+		warn("Error retrieving top players: " .. tostring(pages))
+	end
+end
+
+-- Function to print the top 10 players
+local function printTopPlayers()
+	local topPlayers = getTopPlayer()
+	
+	if not topPlayers then
+		return
+	end
+	
+	if #topPlayers > 0 then
+		print("Top 10 Players:")
+		for rank, entry in ipairs(topPlayers) do
+			print(rank .. ". Player ID: " .. entry.key .. ", Rolls: " .. entry.value)
+		end
+	else
+		print("No top players found.")
+	end
+end
+
+-- Function to add a test entry to RollsStore
+local function addTestEntry()
+	local testKey = "test_player"
+	local testValue = 10 -- Change this value as needed
+
+	local success, errorMessage = pcall(function()
+		rollsDataStore:SetAsync(testKey, testValue)
+	end)
+
+	if success then
+		print("Test entry added: Player ID: " .. testKey .. ", Rolls: " .. testValue)
+	else
+		warn("Error adding test entry: " .. errorMessage)
+	end
+end
+
+-- Connect functions to PlayerAdded and PlayerRemoving events
+game.Players.PlayerAdded:Connect(loadPlayerData)
+game.Players.PlayerRemoving:Connect(savePlayerData)
+
+-- Call printTopPlayers periodically
+game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("RequestLeaderboard").OnServerInvoke = function()
+	return getTopPlayer()
+end
