@@ -1,0 +1,16 @@
+game.Players.PlayerAdded:Connect(function(plr)
+	local playerData = require(plr:WaitForChild("PlayerSaveData"))
+	
+	while task.wait(1) do
+		for i, v in pairs(playerData.Lucks) do
+			if v.Duration then
+				v.Duration = v.Duration - 1
+				
+				if v.Duration < 1 then
+					table.remove(playerData.Lucks, i)
+					game.ReplicatedStorage.Remotes.UpdLuck:FireClient(plr, playerData.Lucks)
+				end
+			end
+		end
+	end
+end)
